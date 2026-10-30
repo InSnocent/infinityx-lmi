@@ -1,0 +1,22 @@
+name: 问题反馈
+description: 提交可复现问题，请先脱敏
+body:
+  - type: markdown
+    attributes:
+      value: 请勿上传 IMEI、序列号、账号、完整 bugreport、NV/persist 或个人分区备份。
+  - type: textarea
+    id: version
+    attributes:
+      label: 机型地区、ROM 版本与 boot/Root 状态
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤、预期结果与实际结果
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 已脱敏的相关日志（可选）

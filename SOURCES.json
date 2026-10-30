@@ -1,0 +1,49 @@
+{
+  "rom": {
+    "name": "Project Infinity-X",
+    "version": "3.12",
+    "android": "16",
+    "variant": "GAPPS-UNOFFICIAL",
+    "lunch": [
+      "infinity_lmi",
+      "bp4a",
+      "userdebug"
+    ],
+    "build_date": "2026-10-29",
+    "manifest_url": "https://github.com/ProjectInfinity-X/manifest",
+    "manifest_commit": "fcb3ab3ac9f771c8efff774df1dfde1bc663732f",
+    "project_count": 1176
+  },
+  "device_revisions": {
+    "device/xiaomi/lmi": "1f0372de77c5068880273bd2f8e3552fa55be3a0",
+    "device/xiaomi/sm8250-common": "da4ba935256abcc07973fb17d6b7729058fc9f9b",
+    "kernel/xiaomi/sm8250": "71b13e62f057a649b77fe4062feb73ee72ad609c",
+    "hardware/xiaomi": "b72a93939350632d3033b1218b10af0f9c0ae5c2",
+    "vendor/xiaomi/lmi": "bfe578af3b2ddcec5428010c862bbcd49401ca21",
+    "vendor/xiaomi/sm8250-common": "b4a9f9ab59190887fee4d882ff10a1a3cc7e7712"
+  },
+  "kernel": {
+    "upstream_url": "https://github.com/LineageOS/android_kernel_xiaomi_sm8250",
+    "baseline_commit": "71b13e62f057a649b77fe4062feb73ee72ad609c",
+    "integration_commit": "e17da496eb24540ca03632f5e8e051f1597a8359",
+    "release": "4.19.325-cip131-st15-perf-g71b13e62f057",
+    "compiler": "clang-r563880c (Clang 21.0.0)",
+    "patch": "patches/kernel/0001-basic-sukisu.patch"
+  },
+  "sukisu": {
+    "upstream_url": "https://github.com/SukiSU-Ultra/SukiSU-Ultra",
+    "branch": "builtin",
+    "upstream_commit": "85d3b0483df224f1dcf6f2880b3181d3f2ca4e0f",
+    "local_compat_commit": "63587ed01de25d43a835b7398d22d6fa7258529f",
+    "driver_version": 41100,
+    "manager_version": "v4.3.0",
+    "patch": "patches/sukisu/0001-lmi-compat-and-offline-metadata.patch",
+    "kpm": false,
+    "susfs": false
+  },
+  "maintainers": [
+    "InSnocent",
+    "Codex"
+  ],
+  "patch_application_note": "Local integration/compat commit IDs record provenance. Reconstruct from the publicly available baseline/upstream commit plus these patches; local commits are not assumed to exist in upstream."
+}

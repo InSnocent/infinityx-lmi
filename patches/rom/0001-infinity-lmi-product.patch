@@ -1,0 +1,50 @@
+diff --git a/AndroidProducts.mk b/AndroidProducts.mk
+index b85d093..892f0b2 100644
+--- a/AndroidProducts.mk
++++ b/AndroidProducts.mk
+@@ -5,4 +5,7 @@
+ #
+ 
+ PRODUCT_MAKEFILES := \
+-    $(LOCAL_DIR)/lineage_lmi.mk
++    $(LOCAL_DIR)/infinity_lmi.mk
++
++COMMON_LUNCH_CHOICES := \
++    infinity_lmi-userdebug
+diff --git a/infinity_lmi.mk b/infinity_lmi.mk
+new file mode 100644
+index 0000000..8bcb552
+--- /dev/null
++++ b/infinity_lmi.mk
+@@ -0,0 +1,31 @@
++#
++# Copyright (C) 2021 The LineageOS Project
++#
++# SPDX-License-Identifier: Apache-2.0
++#
++
++# Inherit from those products. Most specific first.
++$(call inherit-product, $(SRC_TARGET_DIR)/product/core_64_bit.mk)
++$(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
++
++# Local unofficial Infinity-X build.
++INFINITY_BUILD_TYPE := UNOFFICIAL
++INFINITY_MAINTAINER := Codex+InSnocent
++
++# Inherit the Infinity-X phone configuration.
++$(call inherit-product, vendor/infinity/config/common_full_phone.mk)
++
++# Inherit from lmi device
++$(call inherit-product, device/xiaomi/lmi/device.mk)
++
++PRODUCT_NAME := infinity_lmi
++PRODUCT_DEVICE := lmi
++PRODUCT_MANUFACTURER := Xiaomi
++PRODUCT_BRAND := POCO
++PRODUCT_MODEL := POCO F2 Pro
++
++PRODUCT_GMS_CLIENTID_BASE := android-xiaomi
++
++PRODUCT_BUILD_PROP_OVERRIDES += \
++    BuildDesc="lmi-user 12 RKQ1.211001.001 V14.0.1.0.SJKMIXM release-keys" \
++    BuildFingerprint=Redmi/lmi/lmi:12/RKQ1.211001.001/V14.0.1.0.SJKMIXM:user/release-keys

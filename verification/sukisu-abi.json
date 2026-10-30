@@ -1,0 +1,8 @@
+{
+  "passed": true,
+  "release": "4.19.325-cip131-st15-perf-g71b13e62f057",
+  "baseline_export_count": 13880,
+  "missing_old_exports": [],
+  "changed_old_export_crcs": [],
+  "vendor_module_count": 3
+}

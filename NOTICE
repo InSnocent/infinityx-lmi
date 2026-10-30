@@ -1,0 +1,19 @@
+Project Infinity-X for lmi — community UNOFFICIAL build
+
+Original documentation and publication/reproduction helper scripts in this
+repository are provided under Apache-2.0 (see LICENSE).
+Patches and copied source/configuration retain their upstream licenses.
+The Linux kernel and SukiSU driver are GPL-2.0; see LICENSES/GPL-2.0.txt
+and the original SPDX/copyright headers. This repository does not relicense
+Android, proprietary vendor components, Google applications or other binaries.
+
+Upstream work:
+- Project Infinity-X: ROM platform and build system.
+- LineageOS: lmi/sm8250 device trees, Xiaomi hardware support and Linux kernel.
+- TheMuppets: proprietary vendor repositories used by the build.
+- SukiSU-Ultra / KernelSU: kernel root implementation.
+- Android Open Source Project and Linux contributors.
+
+
+Exact revisions and corresponding patches are listed in SOURCES.json.
+This is a community build, not an official upstream release.

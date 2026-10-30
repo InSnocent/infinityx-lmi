@@ -1,0 +1,63 @@
+{
+  "release_tag": "v3.12-lmi-20261029",
+  "repository": "InSnocent/infinityx-lmi",
+  "device": "lmi",
+  "android_version": 16,
+  "rom": {
+    "filename": "Project_Infinity-X-3.12-lmi-29.10.2026-GAPPS-UNOFFICIAL.zip",
+    "bytes": 2424510514,
+    "sha256": "9cf66b7fa39e1f5afd2b22dfdb13739bbba6140c9456ab659e1df2434933843e",
+    "parts": [
+      {
+        "filename": "Project_Infinity-X-3.12-lmi-29.10.2026-GAPPS-UNOFFICIAL.zip.part01",
+        "bytes": 1900000000,
+        "sha256": "b9a547e074ec52cf18600aa1a12657e563b9604c57b1d1abcd14c72c7b2a1225"
+      },
+      {
+        "filename": "Project_Infinity-X-3.12-lmi-29.10.2026-GAPPS-UNOFFICIAL.zip.part02",
+        "bytes": 524510514,
+        "sha256": "29467215fd6d4bf666c00b5686c92edea84b3a56c12fce12a987fd0be9c8d549"
+      }
+    ]
+  },
+  "artifacts": [
+    {
+      "filename": "boot.img",
+      "bytes": 134217728,
+      "sha256": "21283479f70c40ee77b7b74b953d85072b78ab52e7def464d918aa0356b22cb7",
+      "optional": false
+    },
+    {
+      "filename": "recovery.img",
+      "bytes": 134217728,
+      "sha256": "35935b135376b51a6dc1eb673d0329ee84c81672cb24add4ef1192fa59f1e331",
+      "optional": false
+    },
+    {
+      "filename": "dtbo.img",
+      "bytes": 33554432,
+      "sha256": "5274312693176d3f81f6e5bd7df415c79949abd004495f2aae3ecf015c376730",
+      "optional": false
+    },
+    {
+      "filename": "vbmeta.img",
+      "bytes": 8192,
+      "sha256": "c49c3fe2a889ad3da11a8bdfcf246445047303a3e080a4929637c1119abfd113",
+      "optional": false
+    },
+    {
+      "filename": "boot-lmi-infinityx-sukisu-v4.3.0.img",
+      "bytes": 134217728,
+      "sha256": "898749b73f7daf4c37dcdc98e0cfa8671caa8b4d99c4abc9f15c2cf807aa39c3",
+      "optional": true
+    },
+    {
+      "filename": "kernel-sources-lmi-sukisu-v4.3.0.tar.gz",
+      "bytes": 212405241,
+      "sha256": "48172e25ced92851b966231e51b44222771a671f471fe2e51c621bd6d259d564",
+      "role": "complete kernel and driver corresponding source archive"
+    }
+  ],
+  "optional_root_boot_requires_rom_sha256": "9cf66b7fa39e1f5afd2b22dfdb13739bbba6140c9456ab659e1df2434933843e",
+  "rom_bytes_preserved": true
+}

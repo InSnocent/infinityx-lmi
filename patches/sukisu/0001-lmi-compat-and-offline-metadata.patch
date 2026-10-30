@@ -1,0 +1,221 @@
+diff --git a/kernel/Makefile b/kernel/Makefile
+index bed47b88..038b2278 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -27,7 +27,8 @@ ksu-y += preinit/preinit.o preinit/blob.o
+ 
+ KSU_RUNNER_CFLAGS := $(CLANG_FLAGS) -std=gnu11 -Os -Wall \
+ 	-nostdinc -isystem $(shell $(CC) -print-file-name=include) \
+-	-I$(KSU_KERNEL_DIR)/preinit/runner/nolibc -I$(KSU_UAPI_INC) \
++	-I$(KSU_KERNEL_DIR)/preinit/runner/nolibc -I$(KSU_KERNEL_DIR)/preinit/runner/compat -I$(KSU_UAPI_INC) \
++	-include $(KSU_KERNEL_DIR)/preinit/runner/compat/prelude.h \
+ 	-I$(KSU_KERNEL_DIR)/include \
+ 	-ffreestanding -fno-stack-protector -fno-pic -fno-pie \
+ 	-fno-asynchronous-unwind-tables -fno-unwind-tables \
+@@ -55,33 +56,11 @@ ccflags-y += -DKSU_NO_PREINIT
+ endif
+ # ===== end preinit runner =====
+ 
+-REPO_OWNER  := SukiSU-Ultra
+-REPO_NAME   := SukiSU-Ultra
+-REPO_BRANCH := main
+-
+-VERSION_BASE    := 40000
+-VERSION_OFFSET  := 2815
+-
+-GIT_BIN  := /usr/bin/env PATH="$$PATH":/usr/bin:/usr/local/bin git
+-CURL_BIN := /usr/bin/env PATH="$$PATH":/usr/bin:/usr/local/bin curl
+-
+-KSU_SRC := $(if $(filter $(srctree),$(src)),$(src),$(srctree)/$(src))
+-KSU_SRC := $(if $(wildcard $(KSU_SRC)/../.git),$(KSU_SRC),$(MDIR))
+-
+-git_short_sha    = $(shell cd $(KSU_SRC) && $(GIT_BIN) rev-parse --short=8 HEAD 2>/dev/null)
+-git_branch       = $(shell cd $(KSU_SRC) && $(GIT_BIN) rev-parse --abbrev-ref HEAD 2>/dev/null)
+-git_commit_count = $(shell cd $(KSU_SRC) && $(GIT_BIN) rev-list --count $(REPO_BRANCH) 2>/dev/null)
+-git_latest_tag   = $(shell cd $(KSU_SRC) && $(GIT_BIN) describe --tags --abbrev=0 2>/dev/null | sed 's/^v//')
+-
+-$(shell cd $(KSU_SRC) 2>/dev/null && [ -f ../.git/shallow ] && $(GIT_BIN) fetch --unshallow 2>/dev/null)
+-
+-GITHUB_API_BASE  := https://api.github.com/repos/$(REPO_OWNER)/$(REPO_NAME)
+-KSU_GITHUB_VER   := $(shell $(CURL_BIN) -s "$(GITHUB_API_BASE)/releases/latest" 2>/dev/null | grep '"tag_name":' | sed -E 's/.*"v?([^"]+)".*/\1/')
+-GITHUB_COMMITS   := $(shell $(CURL_BIN) -sI "$(GITHUB_API_BASE)/commits?sha=$(REPO_BRANCH)&per_page=1" 2>/dev/null | grep -i "link:" | sed -n 's/.*page=\([0-9]*\)>; rel="last".*/\1/p')
+-LOCAL_COUNT     := $(if $(GITHUB_COMMITS),$(GITHUB_COMMITS),$(git_commit_count))
+-KSU_VERSION     := $(if $(LOCAL_COUNT),$(shell expr $(VERSION_BASE) + $(LOCAL_COUNT) - $(VERSION_OFFSET)),13000)
+-VERSION_TAG     := $(or $(KSU_GITHUB_VER),$(git_latest_tag),4.2.1)
+-KSU_VERSION_FULL := $(if $(call git_short_sha),v$(VERSION_TAG)-$(call git_short_sha)@$(call git_branch),v$(VERSION_TAG)-$(REPO_NAME)-unknown@unknown)
++# Pinned offline metadata for this reproducible lmi build.
++# Official normal manager: v4.3.0 / versionCode 41100; driver commit below.
++REPO_NAME := SukiSU-Ultra
++KSU_VERSION := 41100
++KSU_VERSION_FULL := v4.3.0-85d3b048@builtin-lmi
+ $(info -- $(REPO_NAME) version: $(KSU_VERSION) [$(KSU_VERSION_FULL)])
+ 
+ ccflags-y += -DKSU_VERSION=$(KSU_VERSION)
+diff --git a/kernel/extension/cpu_spoof.c b/kernel/extension/cpu_spoof.c
+index 0007c2fd..062f2fc2 100644
+--- a/kernel/extension/cpu_spoof.c
++++ b/kernel/extension/cpu_spoof.c
+@@ -170,8 +170,13 @@ static int set_spoof_cpu(const struct ksu_set_spoof_cpu_cmd *cmd)
+                         (struct clocksource **)find_kernel_symbol_exact(
+                             "curr_clocksource");
+                     if (curr_cs_ptr && *curr_cs_ptr) {
++#ifdef CONFIG_GENERIC_VDSO_CLOCK_MODE
+                         (*curr_cs_ptr)->vdso_clock_mode =
+                             VDSO_CLOCKMODE_ARCHTIMER;
++#else
++                        /* Legacy ARM64 stores direct vDSO access as a bool. */
++                        (*curr_cs_ptr)->archdata.vdso_direct = true;
++#endif
+                     } else {
+                         pr_warn("ksu: set_spoof_cpu failed to resolve 'curr_clocksource'\n");
+                         ++missing;
+diff --git a/kernel/extension/kpm/kpm.c b/kernel/extension/kpm/kpm.c
+index 5735c2d3..f518725c 100644
+--- a/kernel/extension/kpm/kpm.c
++++ b/kernel/extension/kpm/kpm.c
+@@ -14,6 +14,8 @@
+ #include "compact.h"
+ #include "bridge.h"
+ 
++#ifdef CONFIG_KPM
++
+ #define KPM_NAME_LEN 32
+ #define KPM_ARGS_LEN 1024
+ #define KPM_PATH_LEN 1024
+@@ -187,3 +189,5 @@ int do_kpm(void __user *arg)
+ /* The top-level extension.c registers the KPM extension handler; this
+  * file only implements the underlying KPM control surface. */
+ 
++
++#endif /* CONFIG_KPM */
+diff --git a/kernel/kernel_includes.h b/kernel/kernel_includes.h
+index 422fde3d..367798a3 100644
+--- a/kernel/kernel_includes.h
++++ b/kernel/kernel_includes.h
+@@ -73,7 +73,6 @@
+ #include <linux/vmalloc.h>
+ #include <linux/tty.h>
+ #include <linux/kref.h>
+-#include <linux/static_call.h>
+ #include "arch.h"
+ #ifdef CONFIG_KSU_SUSFS
+ #include <linux/susfs.h>
+diff --git a/kernel/manager/pkg_observer.c b/kernel/manager/pkg_observer.c
+index 375e6b60..bc6acbd4 100644
+--- a/kernel/manager/pkg_observer.c
++++ b/kernel/manager/pkg_observer.c
+@@ -31,8 +31,10 @@ static void ksu_defer_track_throne(void)
+ {
+     struct callback_head *cb;
+ 
++#ifdef CONFIG_KSU_SUSFS
+     // Renew the getpriority uid bitmap filter
+     susfs_parse_priority_app_strings();
++#endif
+ 
+     if (!(current->flags & PF_KTHREAD)) {
+         cb = kzalloc(sizeof(*cb), GFP_KERNEL);
+diff --git a/kernel/preinit/runner/compat/linux/mount.h b/kernel/preinit/runner/compat/linux/mount.h
+new file mode 100644
+index 00000000..08010347
+--- /dev/null
++++ b/kernel/preinit/runner/compat/linux/mount.h
+@@ -0,0 +1,41 @@
++/* SPDX-License-Identifier: GPL-2.0-only */
++/*
++ * Minimal <linux/mount.h> for the SukiSU preinit runner build on 4.19.
++ *
++ * The vendored nolibc sys/mount.h includes <linux/mount.h> for the MS_*
++ * flags, which 4.19 does not ship in uapi. The mount constants below are
++ * ancient, stable ABI values; the runner does not currently use them but
++ * the wrapper must still compile.
++ */
++#ifndef KSU_PREINIT_COMPAT_LINUX_MOUNT_H
++#define KSU_PREINIT_COMPAT_LINUX_MOUNT_H
++
++#ifndef MS_RDONLY
++#define MS_RDONLY	1
++#define MS_NOSUID	2
++#define MS_NODEV	4
++#define MS_NOEXEC	8
++#define MS_SYNCHRONOUS	16
++#define MS_REMOUNT	32
++#define MS_MANDLOCK	64
++#define MS_DIRSYNC	128
++#define MS_NOSYMFOLLOW	256
++#define MS_NOATIME	1024
++#define MS_NODIRATIME	2048
++#define MS_BIND		4096
++#define MS_MOVE		8192
++#define MS_REC		16384
++#define MS_SILENT	32768
++#define MS_POSIXACL	(1 << 16)
++#define MS_UNBINDABLE	(1 << 17)
++#define MS_PRIVATE	(1 << 18)
++#define MS_SLAVE	(1 << 19)
++#define MS_SHARED	(1 << 20)
++#define MS_RELATIME	(1 << 21)
++#define MS_KERNMOUNT	(1 << 22)
++#define MS_I_VERSION	(1 << 23)
++#define MS_STRICTATIME	(1 << 24)
++#define MS_LAZYTIME	(1 << 25)
++#endif
++
++#endif /* KSU_PREINIT_COMPAT_LINUX_MOUNT_H */
+diff --git a/kernel/preinit/runner/compat/prelude.h b/kernel/preinit/runner/compat/prelude.h
+new file mode 100644
+index 00000000..5028cb87
+--- /dev/null
++++ b/kernel/preinit/runner/compat/prelude.h
+@@ -0,0 +1,37 @@
++/* SPDX-License-Identifier: GPL-2.0-only */
++/*
++ * Build-time compatibility shims for the SukiSU preinit runner.
++ *
++ * The runner is a freestanding nolibc program compiled with the kernel's
++ * clang and -nostdinc; it is built against <objtree>/usr/include (the
++ * headers_install output of the kernel being built). On 4.19 those uapi
++ * headers predate clone3, but the vendored nolibc's sys_vfork() fallback
++ * still references struct clone_args / __NR_clone3 unconditionally.
++ *
++ * The runner never calls vfork() (it uses fork(), which goes through the
++ * legacy clone syscall on arm64 and works on 4.19), so these definitions
++ * only satisfy the compiler; they are not reachable at runtime.
++ */
++#ifndef KSU_PREINIT_COMPAT_PRELUDE_H
++#define KSU_PREINIT_COMPAT_PRELUDE_H
++
++#ifndef __NR_clone3
++#define __NR_clone3 435
++#endif
++
++#ifndef KSU_COMPAT_CLONE_ARGS_DEFINED
++#define KSU_COMPAT_CLONE_ARGS_DEFINED
++#define CLONE_ARGS_SIZE_VER0 64
++struct clone_args {
++	unsigned long long flags;
++	unsigned long long pidfd;
++	unsigned long long child_tid;
++	unsigned long long parent_tid;
++	unsigned long long exit_signal;
++	unsigned long long stack;
++	unsigned long long stack_size;
++	unsigned long long tls;
++};
++#endif
++
++#endif /* KSU_PREINIT_COMPAT_PRELUDE_H */
+diff --git a/kernel/selinux/rules.c b/kernel/selinux/rules.c
+index 3d5b86e9..d3f95a7b 100644
+--- a/kernel/selinux/rules.c
++++ b/kernel/selinux/rules.c
+@@ -151,7 +151,9 @@ static int apply_kernelsu_rules_fn(void *ptr)
+ 
+ void apply_kernelsu_rules(void)
+ {
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
+     struct selinux_policy *pol, *old_pol;
++#endif
+     struct policydb *db;
+ 
+     if (!getenforce()) {

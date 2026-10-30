@@ -1,0 +1,52 @@
+{
+  "scope": "First release for lmi; checked before upload on 2026-10-30",
+  "method": "Explicit allowlist export, fresh Git history, pinned source provenance and actual ROM payload inspection",
+  "user_private_backups_included": false,
+  "original_git_repo_metadata_included": false,
+  "private_signing_keys_included": false,
+  "original_raw_logs_included": false,
+  "rom_sha256": "9cf66b7fa39e1f5afd2b22dfdb13739bbba6140c9456ab659e1df2434933843e",
+  "rom_zip_crc_passed": true,
+  "ota_certificate": "Matches the publicly available AOSP test certificate; not a personal certificate",
+  "rom_partitions_reconstructed_from_signed_zip": [
+    "odm",
+    "system",
+    "product",
+    "system_ext",
+    "vendor"
+  ],
+  "boot_ramdisks_inspected": true,
+  "recovery_adb_keys": "Only a symlink to /product/etc/security/adb_keys; no host identity key file was found in the extracted published filesystems",
+  "gitleaks_version": "8.30.1",
+  "gitleaks_repository_findings": 0,
+  "gitleaks_rom_findings": 0,
+  "known_identifier_and_path_scan": {
+    "files_scanned": 83692,
+    "bytes_scanned": 6590795756,
+    "personal_device_identifier_findings": 0,
+    "personal_machine_path_findings": 0,
+    "three_private_key_marker_hits": "Reviewed: format-header string constants only, with no key payload in the same string"
+  },
+  "source_archive": {
+    "entries": 80354,
+    "git_metadata": false,
+    "uid_gid_names": "normalized root/0; no personal archive owners"
+  },
+  "reproduction_checks": {
+    "device_patches_match_successful_sources": true,
+    "patch_application_is_idempotent": true,
+    "kernel_and_driver_patch_applicability": true,
+    "assembler_integrity_tamper_and_no_overwrite_tests": true,
+    "public_boot_repacker_reproduces_tested_boot_sha256": "898749b73f7daf4c37dcdc98e0cfa8671caa8b4d99c4abc9f15c2cf807aa39c3"
+  },
+  "limits": [
+    "Pattern scanners cannot prove the absence of every unknown secret.",
+    "Gitleaks skips binary files and files over 20 MB in the ROM scan; a separate streaming known-identifier/path/header scan covered the larger files.",
+    "Archive-aware Gitleaks inspection used one nesting level; compiled/compressed third-party code is not exhaustively semantically audited.",
+    "Public upstream copyright/author information, generic build metadata and public attribution are retained.",
+    "Functional testing is limited to the device and scenarios described in docs/STATUS.zh-CN.md."
+  ],
+  "distribution": "GitHub hosts source, patches and technical documentation only; binary downloads are hosted separately.",
+  "named_personal_execution_narratives_removed": true,
+  "personal_host_hardware_description_removed": true
+}

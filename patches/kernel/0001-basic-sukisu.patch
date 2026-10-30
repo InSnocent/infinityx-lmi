@@ -1,0 +1,286 @@
+diff --git a/drivers/Kconfig b/drivers/Kconfig
+index 5730f817f..59da8836e 100644
+--- a/drivers/Kconfig
++++ b/drivers/Kconfig
+@@ -1,6 +1,8 @@
+ # SPDX-License-Identifier: GPL-2.0
+ menu "Device Drivers"
+ 
++source "drivers/kernelsu/Kconfig"
++
+ source "drivers/amba/Kconfig"
+ 
+ source "drivers/base/Kconfig"
+diff --git a/drivers/Makefile b/drivers/Makefile
+index 832134439..505215474 100644
+--- a/drivers/Makefile
++++ b/drivers/Makefile
+@@ -6,6 +6,8 @@
+ # Rewritten to use lists instead of if-statements.
+ #
+ 
++obj-$(CONFIG_KSU)		+= kernelsu/
++
+ obj-y				+= irqchip/
+ obj-y				+= bus/
+ 
+diff --git a/drivers/kernelsu b/drivers/kernelsu
+new file mode 120000
+index 000000000..25352f1a7
+--- /dev/null
++++ b/drivers/kernelsu
+@@ -0,0 +1 @@
++../../driver/kernel
+\ No newline at end of file
+diff --git a/fs/exec.c b/fs/exec.c
+index eef84ebca..d99a1a399 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1900,6 +1900,14 @@ static int do_execveat_common(int fd, struct filename *filename,
+ 			      struct user_arg_ptr envp,
+ 			      int flags)
+ {
++#ifdef CONFIG_KSU
++	extern int ksu_handle_execveat(int *, struct filename **, void *,
++				     void *, int *);
++
++	/* The file-only kernel exec path has no filename to inspect. */
++	if (!IS_ERR_OR_NULL(filename))
++		ksu_handle_execveat(&fd, &filename, &argv, &envp, &flags);
++#endif
+ 	return __do_execve_file(fd, filename, argv, envp, flags, NULL);
+ }
+ 
+diff --git a/fs/namespace.c b/fs/namespace.c
+index 4a69b9107..7a988fbfb 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -1704,10 +1704,44 @@ static inline bool may_mandlock(void)
+  * unixes. Our API is identical to OSF/1 to avoid making a mess of AMD
+  */
+ 
++static int can_umount(const struct path *path, int flags)
++{
++	struct mount *mnt = real_mount(path->mnt);
++
++	if (flags & ~(MNT_FORCE | MNT_DETACH | MNT_EXPIRE | UMOUNT_NOFOLLOW))
++		return -EINVAL;
++	if (!may_mount())
++		return -EPERM;
++	if (path->dentry != path->mnt->mnt_root)
++		return -EINVAL;
++	if (!check_mnt(mnt))
++		return -EINVAL;
++	if (mnt->mnt.mnt_flags & MNT_LOCKED) /* Check optimistically */
++		return -EINVAL;
++	if (flags & MNT_FORCE && !capable(CAP_SYS_ADMIN))
++		return -EPERM;
++	return 0;
++}
++
++/* Consumes the caller's path references, including on failure. */
++int path_umount(struct path *path, int flags)
++{
++	struct mount *mnt = real_mount(path->mnt);
++	int ret;
++
++	ret = can_umount(path, flags);
++	if (!ret)
++		ret = do_umount(mnt, flags);
++
++	/* Do not use path_put(): it would clear mnt_expiry_mark. */
++	dput(path->dentry);
++	mntput_no_expire(mnt);
++	return ret;
++}
++
+ int ksys_umount(char __user *name, int flags)
+ {
+ 	struct path path;
+-	struct mount *mnt;
+ 	int retval;
+ 	int lookup_flags = 0;
+ 
+@@ -1723,23 +1757,7 @@ int ksys_umount(char __user *name, int flags)
+ 	retval = user_path_mountpoint_at(AT_FDCWD, name, lookup_flags, &path);
+ 	if (retval)
+ 		goto out;
+-	mnt = real_mount(path.mnt);
+-	retval = -EINVAL;
+-	if (path.dentry != path.mnt->mnt_root)
+-		goto dput_and_out;
+-	if (!check_mnt(mnt))
+-		goto dput_and_out;
+-	if (mnt->mnt.mnt_flags & MNT_LOCKED) /* Check optimistically */
+-		goto dput_and_out;
+-	retval = -EPERM;
+-	if (flags & MNT_FORCE && !capable(CAP_SYS_ADMIN))
+-		goto dput_and_out;
+-
+-	retval = do_umount(mnt, flags);
+-dput_and_out:
+-	/* we mustn't call path_put() as that would clear mnt_expiry_mark */
+-	dput(path.dentry);
+-	mntput_no_expire(mnt);
++	return path_umount(&path, flags);
+ 
+ out:
+ 	return retval;
+diff --git a/fs/open.c b/fs/open.c
+index 13d70db56..27d4290c8 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -453,6 +453,12 @@ long do_faccessat(int dfd, const char __user *filename, int mode)
+ 
+ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
+ {
++#ifdef CONFIG_KSU
++	extern int ksu_handle_faccessat(int *, const char __user **, int *,
++				      int *);
++
++	ksu_handle_faccessat(&dfd, &filename, &mode, NULL);
++#endif
+ 	return do_faccessat(dfd, filename, mode);
+ }
+ 
+diff --git a/fs/read_write.c b/fs/read_write.c
+index ec2d20ddd..f1a4519a5 100644
+--- a/fs/read_write.c
++++ b/fs/read_write.c
+@@ -449,6 +449,17 @@ ssize_t vfs_read(struct file *file, char __user *buf, size_t count, loff_t *pos)
+ 	if (!ret) {
+ 		if (count > MAX_RW_COUNT)
+ 			count =  MAX_RW_COUNT;
++#ifdef CONFIG_KSU
++		{
++			extern bool ksu_vfs_read_hook;
++			extern int ksu_handle_vfs_read(struct file **,
++						     char __user **, size_t *,
++						     loff_t **);
++
++			if (unlikely(ksu_vfs_read_hook))
++				ksu_handle_vfs_read(&file, &buf, &count, &pos);
++		}
++#endif
+ 		ret = __vfs_read(file, buf, count, pos);
+ 		if (ret > 0) {
+ 			fsnotify_access(file);
+diff --git a/fs/stat.c b/fs/stat.c
+index 376543199..9f5e33d59 100644
+--- a/fs/stat.c
++++ b/fs/stat.c
+@@ -360,6 +360,12 @@ SYSCALL_DEFINE4(newfstatat, int, dfd, const char __user *, filename,
+ 	struct kstat stat;
+ 	int error;
+ 
++#ifdef CONFIG_KSU
++	extern int ksu_handle_stat(int *, const char __user **, int *);
++
++	ksu_handle_stat(&dfd, &filename, &flag);
++#endif
++
+ 	error = vfs_fstatat(dfd, filename, &stat, flag);
+ 	if (error)
+ 		return error;
+@@ -371,6 +377,13 @@ SYSCALL_DEFINE2(newfstat, unsigned int, fd, struct stat __user *, statbuf)
+ {
+ 	struct kstat stat;
+ 	int error = vfs_fstat(fd, &stat);
++#ifdef CONFIG_KSU
++	extern void ksu_handle_vfs_fstat(int, loff_t *);
++
++	/* init may size its rc read from fstat, including on 32-bit tasks. */
++	if (!error)
++		ksu_handle_vfs_fstat(fd, &stat.size);
++#endif
+ 
+ 	if (!error)
+ 		error = cp_new_stat(&stat, statbuf);
+@@ -497,6 +510,13 @@ SYSCALL_DEFINE2(fstat64, unsigned long, fd, struct stat64 __user *, statbuf)
+ {
+ 	struct kstat stat;
+ 	int error = vfs_fstat(fd, &stat);
++#ifdef CONFIG_KSU
++	extern void ksu_handle_vfs_fstat(int, loff_t *);
++
++	/* init may size its rc read from fstat, including on 32-bit tasks. */
++	if (!error)
++		ksu_handle_vfs_fstat(fd, &stat.size);
++#endif
+ 
+ 	if (!error)
+ 		error = cp_new_stat64(&stat, statbuf);
+@@ -510,6 +530,12 @@ SYSCALL_DEFINE4(fstatat64, int, dfd, const char __user *, filename,
+ 	struct kstat stat;
+ 	int error;
+ 
++#ifdef CONFIG_KSU
++	extern int ksu_handle_stat(int *, const char __user **, int *);
++
++	ksu_handle_stat(&dfd, &filename, &flag);
++#endif
++
+ 	error = vfs_fstatat(dfd, filename, &stat, flag);
+ 	if (error)
+ 		return error;
+@@ -650,6 +676,14 @@ COMPAT_SYSCALL_DEFINE4(newfstatat, unsigned int, dfd,
+ 	struct kstat stat;
+ 	int error;
+ 
++#ifdef CONFIG_KSU
++	extern int ksu_handle_stat(int *, const char __user **, int *);
++	int ksu_dfd = (int)dfd;
++
++	ksu_handle_stat(&ksu_dfd, &filename, &flag);
++	dfd = ksu_dfd;
++#endif
++
+ 	error = vfs_fstatat(dfd, filename, &stat, flag);
+ 	if (error)
+ 		return error;
+@@ -662,6 +696,13 @@ COMPAT_SYSCALL_DEFINE2(newfstat, unsigned int, fd,
+ {
+ 	struct kstat stat;
+ 	int error = vfs_fstat(fd, &stat);
++#ifdef CONFIG_KSU
++	extern void ksu_handle_vfs_fstat(int, loff_t *);
++
++	/* init may size its rc read from fstat, including on 32-bit tasks. */
++	if (!error)
++		ksu_handle_vfs_fstat(fd, &stat.size);
++#endif
+ 
+ 	if (!error)
+ 		error = cp_compat_stat(&stat, statbuf);
+diff --git a/include/linux/mount.h b/include/linux/mount.h
+index 538b74be5..d780de0f0 100644
+--- a/include/linux/mount.h
++++ b/include/linux/mount.h
+@@ -114,5 +114,7 @@ extern dev_t name_to_dev_t(const char *name);
+ extern unsigned int sysctl_mount_max;
+ 
+ extern bool path_is_mountpoint(const struct path *path);
++/* Consumes the path references on both success and failure. */
++extern int path_umount(struct path *path, int flags);
+ 
+ #endif /* _LINUX_MOUNT_H */
+diff --git a/kernel/reboot.c b/kernel/reboot.c
+index 19f89c074..7c811d351 100644
+--- a/kernel/reboot.c
++++ b/kernel/reboot.c
+@@ -312,6 +312,15 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
+ 	char buffer[256];
+ 	int ret = 0;
+ 
++#ifdef CONFIG_KSU
++	extern int ksu_handle_sys_reboot(int, int, unsigned int,
++				       void __user **);
++
++	/* KSU_INSTALL_MAGIC1/2 from the pinned builtin driver's UAPI. */
++	if ((u32)magic1 == 0xDEADBEEF && (u32)magic2 == 0xCAFEBABE)
++		return ksu_handle_sys_reboot(magic1, magic2, cmd, &arg);
++#endif
++
+ 	/* We only trust the superuser with rebooting the system. */
+ 	if (!ns_capable(pid_ns->user_ns, CAP_SYS_BOOT))
+ 		return -EPERM;
