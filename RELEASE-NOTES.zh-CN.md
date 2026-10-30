@@ -9,7 +9,7 @@
   完整 ROM 的 SHA-256 必须为
   9cf66b7fa39e1f5afd2b22dfdb13739bbba6140c9456ab659e1df2434933843e。
 - recovery.img 是配套 AOSP/Lineage 衍生 Recovery。
-- 刷机前阅读 docs/INSTALL.zh-CN.md；首次从其他 ROM 迁移涉及清除用户数据。
+- 刷机前阅读 README 的「如何使用」；首次从其他 ROM 迁移涉及清除用户数据。
 - root boot 只适用于本版 ROM；回退只需刷回同版 boot.img，不格式化。
 - MIUI 固件、手机个人备份和校准/NV 数据不在 GitHub 仓库中。
 - 实测范围和指示灯/前摄相关现象见 docs/STATUS.zh-CN.md。

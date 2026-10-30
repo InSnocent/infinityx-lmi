@@ -54,6 +54,7 @@ m bacon -j4
 完整源码归档 kernel-sources-lmi-sukisu-v4.3.0.tar.gz 可与刷机包一同通过网盘分发。
 它包含集成后的完整 kernel/ 和 driver/ 源码（无 .git、构建输出或个人日志），
 配合本仓库配置和固定 Android 工具链，可复现 SukiSU 内核。
-普通 ROM 内核的基线提交以及反向撤销 SukiSU 补丁的方法见 SUKISU.zh-CN.md。
+普通 ROM 内核的基线提交以及反向撤销 SukiSU 补丁的方法见 README 的
+「可选 Root（SukiSU Ultra）」与 patches/、configs/。
 
 保留上游版权；不要将本社区构建当成官方 Infinity-X 或 LineageOS 发布。
