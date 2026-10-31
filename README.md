@@ -20,7 +20,7 @@ Redmi K30 Pro（代号 lmi）的 Project Infinity-X 非官方构建、复现资�
 - [版本说明](RELEASE-NOTES.zh-CN.md)
 - [隐私扫描范围与限制](PRIVACY-AUDIT.json)
 - ROM 下载：
-  - [SourceForce](https://sourceforge.net/projects/lmi-infinityx-a16-unofficial/)
+  - [SourceForge](https://sourceforge.net/projects/lmi-infinityx-a16-unofficial/)
   - [MEGA](https://mega.nz/file/MpRRAbQZ#m8YWwipUbB9SgZYBAJYTBfFywAgBH5bQXrIK2YnE_FE)
   - 夸克网盘（暂无）
 
