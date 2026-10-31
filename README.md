@@ -6,11 +6,11 @@ Redmi K30 Pro（代号 lmi）的 Project Infinity-X 非官方构建、复现资�
 
 ---
 ### 截图展示
-![桌面](docs/images/1.png)
-![状态栏与AOD](docs/images/2.png)
-![快捷设置](docs/images/3.png)
-![设置菜单](docs/images/4.png)
-![关于](docs/images/5.png)
+
+| | | |
+|--|--|--|
+|![桌面](docs/images/1.png)|![设置菜单](docs/images/2W.png)|![磁贴](docs/images/3W.png)|
+|![关于](docs/images/5.png)|![设置菜单](docs/images/2B.png)|![磁贴](docs/images/3B.png)|
 
 ---
 ## 说明

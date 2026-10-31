@@ -7,11 +7,11 @@ with reproduction materials and an optional SukiSU Ultra boot. Provided for refe
 
 ---
 ### Screenshots
-![Home screen](images/1.png)
-![Status bar and AOD](images/2.png)
-![Quick settings](images/3.png)
-![Settings](images/4.png)
-![About](images/5.png)
+
+| | | |
+|--|--|--|
+|![Home screen](images/1.png)|![Settings menu](images/2W.png)|![Quick Settings tiles](images/3W.png)|
+|![About](images/5.png)|![Settings menu](images/2B.png)|![Quick Settings tiles](images/3B.png)|
 
 ---
 ## Documentation
